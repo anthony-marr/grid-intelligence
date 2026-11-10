@@ -1,0 +1,9 @@
+data/raw/
+data/bronze/
+data/*.wal
+.git/
+__pycache__/
+.pytest_cache/
+tests/
+dbt/target/
+dbt/logs/

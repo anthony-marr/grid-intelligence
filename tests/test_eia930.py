@@ -19,13 +19,14 @@ def test_halves_for_range():
 def test_ingest_balance_csv_filters_and_sums(tmp_path):
     dest = eia930.ingest_balance_csv(
         FIXTURES / "sample_eia930_balance.csv", ("PJM",), tmp_path)
-    rows = duckdb.connect().execute(
-        f"SELECT * FROM read_parquet('{dest}') ORDER BY hour_ending_utc"
-    ).fetchdf().to_dict("records")
+    cur = duckdb.connect().execute(
+        f"SELECT * FROM read_parquet('{dest}') ORDER BY hour_ending_utc")
+    cols = [d[0] for d in cur.description]
+    rows = [dict(zip(cols, row)) for row in cur.fetchall()]
     assert len(rows) == 2  # ERCO row filtered out
     first = rows[0]
     assert first["balancing_authority"] == "PJM"
-    assert first["data_date"].date() == dt.date(2026, 11, 1)
+    assert first["data_date"] == dt.date(2026, 11, 1)
     assert first["hour_ending_utc"] == dt.datetime(2026, 11, 1, 5, 0)
     # solar with + without integrated battery storage are summed
     assert first["ng_solar_mw"] == 15.0

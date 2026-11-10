@@ -22,4 +22,4 @@ min_machines_running = 0
 
 [[vm]]
 size = "shared-cpu-1x"
-memory = "512mb"
+memory = "256mb"

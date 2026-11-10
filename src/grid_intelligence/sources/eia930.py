@@ -99,10 +99,11 @@ def _validate_sample(parquet_path: Path, sample_size: int = 50) -> int:
     con = duckdb.connect()
     total = con.execute(
         f"SELECT count(*) FROM read_parquet('{parquet_path}')").fetchone()[0]
-    rows = con.execute(
+    cur = con.execute(
         f"SELECT * FROM read_parquet('{parquet_path}') "
-        f"USING SAMPLE {min(sample_size, total)} ROWS"
-    ).fetchdf().to_dict("records")
+        f"USING SAMPLE {min(sample_size, total)} ROWS")
+    cols = [d[0] for d in cur.description]
+    rows = [dict(zip(cols, row)) for row in cur.fetchall()]
     for rec in rows:
         Eia930BalanceRow.model_validate(rec)
     return total
