@@ -1,0 +1,20 @@
+select
+    balancing_authority as ba,
+    data_date,
+    hour_ending_utc,
+    demand_mw,
+    demand_forecast_mw,
+    net_generation_mw,
+    ng_coal_mw,
+    ng_natural_gas_mw,
+    ng_nuclear_mw,
+    ng_petroleum_mw,
+    ng_hydropower_mw,
+    ng_pumped_storage_mw,
+    ng_solar_mw,
+    ng_wind_mw,
+    ng_battery_storage_mw,
+    ng_geothermal_mw,
+    ng_other_mw,
+    ng_unknown_mw
+from read_parquet('{{ env_var("GRID_BRONZE_DIR", "data/bronze") }}/eia930_balance/*.parquet')

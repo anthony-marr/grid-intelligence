@@ -1,0 +1,14 @@
+name: grid_intelligence
+version: 1.0.0
+config-version: 2
+profile: grid_intelligence
+model-paths: ["models"]
+seed-paths: ["seeds"]
+models:
+  grid_intelligence:
+    staging:
+      +materialized: view
+    marts:
+      +materialized: table
+seeds:
+  +quote_columns: false

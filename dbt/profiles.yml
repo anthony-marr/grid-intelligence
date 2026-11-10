@@ -1,0 +1,7 @@
+grid_intelligence:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: "{{ env_var('GRID_DUCKDB_PATH', 'data/grid.duckdb') }}"
+      threads: 4

@@ -1,0 +1,10 @@
+version: 2
+# Bronze layers are Parquet files written by grid-ingest; staging models read
+# them straight off disk with read_parquet (see GRID_BRONZE_DIR).
+sources:
+  - name: bronze
+    description: raw Parquet written by the ingest CLI
+    tables:
+      - name: eia930_balance
+      - name: nrc_reactor_status
+      - name: weather_hourly

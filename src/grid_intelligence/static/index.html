@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Grid Intelligence</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<style>
+  :root { color-scheme: light dark; }
+  body { font-family: ui-sans-serif, system-ui, sans-serif; margin: 0 auto;
+         max-width: 1000px; padding: 24px 16px 64px; line-height: 1.45; }
+  h1 { font-size: 1.5rem; margin-bottom: 0; }
+  h2 { font-size: 1.05rem; margin-top: 2.2rem; }
+  .sub { opacity: .7; margin-top: .2rem; font-size: .9rem; }
+  .card { border: 1px solid color-mix(in srgb, currentColor 20%, transparent);
+          border-radius: 10px; padding: 16px; margin-top: 12px; }
+  table { border-collapse: collapse; width: 100%; font-size: .85rem; }
+  th, td { text-align: left; padding: 4px 8px;
+           border-bottom: 1px solid color-mix(in srgb, currentColor 12%, transparent); }
+  td.num, th.num { text-align: right; }
+  tr.down td { color: #d33; font-weight: 600; }
+  .charts { display: grid; gap: 12px; }
+  @media (min-width: 800px) { .charts { grid-template-columns: 1fr 1fr; } }
+</style>
+</head>
+<body>
+<h1>Grid Intelligence</h1>
+<p class="sub" id="subtitle">US grid and nuclear fleet data - EIA-930, NRC, Open-Meteo</p>
+
+<div class="charts">
+  <div class="card">
+    <h2 id="mixTitle">Generation mix</h2>
+    <canvas id="mixChart" height="220"></canvas>
+  </div>
+  <div class="card">
+    <h2>Carbon intensity, kg CO2/MWh</h2>
+    <canvas id="carbonChart" height="220"></canvas>
+  </div>
+  <div class="card">
+    <h2>Demand vs temperature (daily)</h2>
+    <canvas id="demandChart" height="220"></canvas>
+  </div>
+  <div class="card">
+    <h2 id="reactorTitle">Nuclear fleet</h2>
+    <div style="max-height:260px; overflow:auto">
+      <table id="reactorTable">
+        <thead><tr><th>Unit</th><th class="num">Power %</th><th>Note</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+const FUEL_COLORS = {
+  nuclear: '#7c3aed', natural_gas: '#f59e0b', coal: '#57534e',
+  solar: '#facc15', wind: '#22c55e', hydropower: '#0ea5e9',
+  petroleum: '#991b1b', battery_storage: '#14b8a6', pumped_storage: '#38bdf8',
+  geothermal: '#a16207', other: '#a8a29e', unknown: '#d6d3d1'
+};
+
+async function getJSON(url) {
+  const r = await fetch(url);
+  if (!r.ok) throw new Error(url + ' -> ' + r.status);
+  return r.json();
+}
+
+async function renderMix() {
+  const rows = await getJSON('/api/mix');
+  const day = rows.length ? rows[0].hour_ending_utc.slice(0, 10) : '';
+  document.getElementById('mixTitle').textContent =
+    'Generation mix by fuel, ' + day + ' (MW, hourly)';
+  const fuels = [...new Set(rows.map(r => r.fuel))];
+  const hours = [...new Set(rows.map(r => r.hour_ending_utc))].sort();
+  const byFuel = Object.fromEntries(fuels.map(f => [f, new Array(hours.length).fill(0)]));
+  for (const r of rows) byFuel[r.fuel][hours.indexOf(r.hour_ending_utc)] = r.mw;
+  const datasets = fuels
+    .filter(f => byFuel[f].some(v => v > 0))
+    .map(f => ({ label: f.replaceAll('_', ' '), data: byFuel[f],
+                 backgroundColor: FUEL_COLORS[f] || '#999',
+                 stack: 'mix', borderWidth: 0 }));
+  new Chart(mixChart, { type: 'bar',
+    data: { labels: hours.map(h => h.slice(11, 16)), datasets },
+    options: { scales: { x: { stacked: true }, y: { stacked: true } },
+               plugins: { legend: { position: 'bottom' } } } });
+}
+
+async function renderCarbon() {
+  const rows = await getJSON('/api/carbon?days=30');
+  new Chart(carbonChart, { type: 'line',
+    data: { labels: rows.map(r => r.data_date),
+      datasets: [
+        { label: 'kg CO2/MWh', data: rows.map(r => r.kg_co2_per_mwh),
+          borderColor: '#f59e0b', yAxisID: 'y', tension: .25, pointRadius: 0 },
+        { label: 'carbon-free share', data: rows.map(r => r.carbon_free_share),
+          borderColor: '#22c55e', yAxisID: 'y1', tension: .25, pointRadius: 0 } ] },
+    options: { scales: { y: { position: 'left' },
+                         y1: { position: 'right', min: 0, max: 1,
+                               grid: { drawOnChartArea: false } } },
+               plugins: { legend: { position: 'bottom' } } } });
+}
+
+async function renderDemand() {
+  const rows = await getJSON('/api/demand-weather?days=30');
+  new Chart(demandChart, { type: 'scatter',
+    data: { datasets: [
+      { label: 'avg demand (MW) vs avg temp (C)',
+        data: rows.map(r => ({ x: r.avg_temp_c, y: r.avg_demand_mw })),
+        backgroundColor: '#0ea5e9' },
+      { label: 'peak demand (MW)',
+        data: rows.map(r => ({ x: r.avg_temp_c, y: r.peak_demand_mw })),
+        backgroundColor: '#f59e0b' } ] },
+    options: { plugins: { legend: { position: 'bottom' } } } });
+}
+
+async function renderReactors() {
+  const rows = await getJSON('/api/reactors/latest');
+  const tbody = document.querySelector('#reactorTable tbody');
+  let down = 0;
+  for (const r of rows) {
+    if (r.power_pct === 0) down++;
+    const tr = document.createElement('tr');
+    if (r.power_pct === 0) tr.className = 'down';
+    const note = r.reason_or_comment || r.down_date || '';
+    tr.innerHTML = `<td>${r.unit}</td><td class="num">${r.power_pct ?? ''}</td><td>${note}</td>`;
+    tbody.appendChild(tr);
+  }
+  document.getElementById('reactorTitle').textContent =
+    `Nuclear fleet - latest NRC report (${rows.length} units, ${down} at 0%)`;
+}
+
+Promise.all([renderMix(), renderCarbon(), renderDemand(), renderReactors()])
+  .catch(e => { document.getElementById('subtitle').textContent =
+    'API not ready: ' + e.message; });
+</script>
+</body>
+</html>

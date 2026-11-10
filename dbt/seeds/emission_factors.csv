@@ -1,0 +1,13 @@
+fuel,kg_co2_per_mwh,note
+coal,1025,EIA electric-power-sector average 2.26 lb CO2/kWh
+natural_gas,413,EIA electric-power-sector average 0.91 lb CO2/kWh
+petroleum,1107,EIA electric-power-sector average 2.44 lb CO2/kWh
+nuclear,0,no direct combustion emissions
+hydropower,0,no direct combustion emissions
+pumped_storage,0,no direct combustion emissions
+solar,0,no direct combustion emissions
+wind,0,no direct combustion emissions
+battery_storage,0,no direct combustion emissions
+geothermal,0,negligible direct emissions at PJM scale
+other,413,assumed gas-like mix
+unknown,0,excluded (treated as clean)
