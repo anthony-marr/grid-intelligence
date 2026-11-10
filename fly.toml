@@ -1,4 +1,4 @@
-app = "grid-intelligence"
+app = "grid-intelligence-pjm"
 primary_region = "iad"
 
 [build]

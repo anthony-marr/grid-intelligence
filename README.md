@@ -9,7 +9,10 @@ serves the results through a dashboard and an MCP query layer. The angle is
 nuclear fleet reliability and grid carbon intensity: what the PJM mix looked
 like yesterday, which reactors were down, and how demand tracks temperature.
 
-Started November 2026.
+Started November 2026. Live demo: https://grid-intelligence-pjm.fly.dev/
+(deployed on a scale-to-zero Fly machine; first load after idle takes a few
+seconds). The deployed image carries a data snapshot, so "yesterday" advances
+when a new image ships until scheduled ingest lands.
 
 ## How it fits together
 
