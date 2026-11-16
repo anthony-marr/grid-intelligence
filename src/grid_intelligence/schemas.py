@@ -53,14 +53,12 @@ class NrcReactorStatusRow(BaseModel):
 
 
 class WeatherHourRow(BaseModel):
-    """One hourly weather observation for the analysis location."""
+    """One hourly Open-Meteo archive row (UTC) for the analysis location.
+
+    temperature_c is nullable: the archive can return a null for a missing
+    hour, and that gap should land in bronze as a null instead of failing
+    validation of the whole payload.
+    """
 
     ts_utc: dt.datetime
     temperature_c: Optional[float] = None
-
-
-class WeatherHourRow(BaseModel):
-    """One hourly Open-Meteo archive row (UTC)."""
-
-    ts_utc: dt.datetime
-    temperature_c: float
