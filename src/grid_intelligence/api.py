@@ -64,7 +64,12 @@ def fuel_mix(ba: str = "PJM", date: dt.date | None = Query(None)) -> list[dict]:
     if date is None:
         rows = _query("select max(data_date) from fct_fuel_mix_hourly "
                       "where ba = ? and mw > 0", [ba.upper()])
-        date = dt.date.fromisoformat(rows[0]["max(data_date)"])
+        latest = rows[0]["max(data_date)"] if rows else None
+        if latest is None:
+            raise HTTPException(
+                404, f"no fuel-mix data loaded for balancing authority "
+                     f"{ba.upper()}")
+        date = dt.date.fromisoformat(latest)
     return _query(
         "select hour_ending_utc, fuel, mw, demand_mw from fct_fuel_mix_hourly "
         "where ba = ? and data_date = ? order by hour_ending_utc, fuel",
