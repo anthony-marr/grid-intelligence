@@ -42,3 +42,8 @@ def test_demand_weather(client):
 def test_index(client):
     resp = client.get("/")
     assert resp.status_code == 200 and "Grid Intelligence" in resp.text
+
+
+def test_fuel_mix_unknown_ba_returns_404(client):
+    resp = client.get("/api/mix", params={"ba": "NOPE"})
+    assert resp.status_code == 404
