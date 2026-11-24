@@ -47,3 +47,26 @@ def test_index(client):
 def test_fuel_mix_unknown_ba_returns_404(client):
     resp = client.get("/api/mix", params={"ba": "NOPE"})
     assert resp.status_code == 404
+
+
+def test_fuel_mix_ba_is_case_insensitive(client):
+    assert client.get("/api/mix", params={"ba": "pjm"}).json() == \
+        client.get("/api/mix", params={"ba": "PJM"}).json()
+
+
+def test_fuel_mix_explicit_date_without_data_is_empty(client):
+    resp = client.get("/api/mix", params={"date": "1999-01-01"})
+    assert resp.status_code == 200 and resp.json() == []
+
+
+def test_reactor_capacity_min_days_filters_reactors(client):
+    assert client.get("/api/reactors/capacity", params={"min_days": 1}).json()
+    assert client.get("/api/reactors/capacity",
+                      params={"min_days": 1000}).json() == []
+
+
+def test_day_window_parameters_are_validated(client):
+    assert client.get("/api/carbon", params={"days": 0}).status_code == 422
+    assert client.get("/api/carbon", params={"days": 367}).status_code == 422
+    assert client.get("/api/demand-weather",
+                      params={"days": 0}).status_code == 422
